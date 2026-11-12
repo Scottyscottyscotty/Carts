@@ -16,6 +16,10 @@
     </div>
   </header>
   <p class="hint">On Manapool, open your cart (or a listing) and tag lines to the Active commander. Checkout is never automated.</p>
+  <div id="undo-bar" class="undo" hidden>
+    <span id="undo-label"></span>
+    <button id="undo-btn">Undo</button>
+  </div>
   <main id="commanders"></main>
   <p id="error" class="error" hidden></p>
   <footer id="footer-tools">
@@ -25,6 +29,10 @@
     <button id="debug-info" title="Copies version and page-read info (no card or personal data) to send with a bug report">Copy debug info</button>
     <input id="import-file" type="file" accept="application/json,.json" hidden />
     <span id="version" class="muted"></span>
+    <label class="backup-toggle" title="Saves a dated .json file to Downloads/Commander Cart Tagger backups after changes, at most about once a day">
+      <input id="auto-backup" type="checkbox" /> Daily backup file to Downloads
+    </label>
+    <p id="backup-status" class="backup-status"></p>
   </footer>
   <script type="module" src="sidepanel.js"></script>
 </body>

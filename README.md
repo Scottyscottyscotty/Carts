@@ -34,6 +34,9 @@ moving the folder. For testers: see [TESTING.md](TESTING.md). `npm run package` 
    commander's share of the line, and a **left cart** badge for items that were in your cart and no longer are.
 5. **Copy list** copies `1 Card Name (SET) 123` lines, **Copy names only** copies `1 Card Name`, **Copy all lists**
    merges every commander. **Export data / Import data** make and restore a JSON backup.
+6. **Safety net:** deleting a commander or importing can be undone for 5 minutes; a dated backup is saved to
+   `Downloads/Commander Cart Tagger backups/` after changes (at most about once a day, toggle in the panel footer,
+   uses the `downloads` permission); the panel footer shows when you last backed up and warns after a week.
 
 ## How it works
 

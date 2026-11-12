@@ -4,7 +4,8 @@ Thanks for helping! This extension lets you pick a Commander deck and tags the c
 Manapool to it, then shows your shopping grouped per deck. It's an early test build.
 
 ## What it does and doesn't do
-- Everything stays **in your browser** (`chrome.storage.local`). No accounts, no server of ours.
+- Everything stays **in your browser** (`chrome.storage.local`). No accounts, no server of ours. Removing the extension
+  or resetting your Chrome profile deletes it, which is why it also saves backup files to your Downloads folder.
 - The only outside request is to **Scryfall** (to search commanders).
 - It reads the Manapool pages you open and adds small controls to them. It **never** checks out, buys or
   changes your cart for you. You press Manapool's own buttons.
@@ -27,7 +28,10 @@ Manapool to it, then shows your shopping grouped per deck. It's an early test bu
 4. Open your Manapool **cart**. Do the lines show tag controls? Tag some, remove one from the cart, come back:
    does the panel say **left cart**?
 5. Try **Copy list**, **Copy names only** and **Copy all lists**, and paste somewhere.
-6. **Export data**, then **Import data** it back.
+6. **Export data**, then **Import data** it back. Delete a commander and press **Undo** (available for 5 minutes).
+7. Look at the bottom of the panel: it should say when your last backup was. With **Daily backup file to Downloads** on,
+   a dated file appears in `Downloads/Commander Cart Tagger backups/` after you make changes (at most about once a day;
+   Chrome may show a small download notice). Keep that folder if you ever lose your data: **Import data** restores it.
 
 ## If something breaks
 Click **Copy debug info** in the side panel and paste it into a bug report (or message), along with what you

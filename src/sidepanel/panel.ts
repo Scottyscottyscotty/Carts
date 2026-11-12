@@ -1,5 +1,15 @@
 import { store } from "../core/client";
-import { loadHealth, loadSettings } from "../core/storage";
+import {
+  BACKUP_MANUAL_KEY,
+  chromeKV,
+  loadBackupState,
+  loadHealth,
+  loadSettings,
+  loadUndo,
+  saveSettings,
+  UNDO_TTL_MS,
+} from "../core/storage";
+import { backupStatus } from "../core/backup";
 import { searchCommanders, type CommanderResult } from "../core/scryfall";
 import {
   allocatedQty,
@@ -285,6 +295,8 @@ $<HTMLButtonElement>("export-data").onclick = async () => {
     });
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    await chromeKV.set(BACKUP_MANUAL_KEY, { at: Date.now() });
+    void refreshBackupStatus();
   } catch (e) {
     showError(e);
   }
@@ -326,8 +338,59 @@ $<HTMLButtonElement>("debug-info").onclick = async (ev) => {
   }
 };
 
+// ---------- backups and undo ----------
+const backupStatusEl = $<HTMLParagraphElement>("backup-status");
+const autoBackupEl = $<HTMLInputElement>("auto-backup");
+const undoBar = $<HTMLElement>("undo-bar");
+const undoLabel = $<HTMLElement>("undo-label");
+let undoTimer: number | undefined;
+
+async function refreshBackupStatus() {
+  try {
+    const [data, settings, b] = await Promise.all([store.load(), loadSettings(), loadBackupState()]);
+    autoBackupEl.checked = settings.autoBackup;
+    const s = backupStatus({
+      now: Date.now(),
+      hasData: data.commanderOrder.length > 0 || Object.keys(data.items).length > 0,
+      autoEnabled: settings.autoBackup,
+      manualAt: b.manualAt,
+      auto: b.auto,
+    });
+    backupStatusEl.textContent = s.text;
+    backupStatusEl.className = "backup-status" + (s.level === "warn" ? " warn" : "");
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function refreshUndo() {
+  clearTimeout(undoTimer);
+  const snap = await loadUndo();
+  undoBar.hidden = !snap;
+  if (!snap) return;
+  undoLabel.textContent = `${snap.label}.`;
+  undoTimer = window.setTimeout(refreshUndo, Math.max(1000, snap.at + UNDO_TTL_MS - Date.now() + 200));
+}
+
+$<HTMLButtonElement>("undo-btn").onclick = async () => {
+  try {
+    render(await store.undo());
+    await refreshUndo();
+  } catch (e) {
+    showError(e);
+  }
+};
+
+autoBackupEl.onchange = () => void saveSettings({ autoBackup: autoBackupEl.checked }).then(refreshBackupStatus);
+
 // ---------- init ----------
-store.load().then(render).catch(showError);
+function refreshAll() {
+  store.load().then(render).catch(showError);
+  void refreshUndo();
+  void refreshBackupStatus();
+}
+refreshAll();
 chrome.storage.onChanged.addListener((_c, area) => {
-  if (area === "local") store.load().then(render).catch(showError);
+  if (area === "local") refreshAll();
 });
+setInterval(() => void refreshBackupStatus(), 60_000);

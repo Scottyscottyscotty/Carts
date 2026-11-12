@@ -43,3 +43,8 @@ footer .muted { margin:0 0 0 auto; }
 input.qty { width:3.4em; }
 .badge { margin-left:6px; font-size:10px; padding:1px 6px; border-radius:999px; background:#2b2b3a; color:var(--muted); vertical-align:middle; }
 .badge.warn { background:#5a3b00; color:#ffd28a; }
+
+.undo { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 10px 0; padding:8px 10px; background:#2a2440; border:1px solid var(--accent); border-radius:8px; }
+.backup-status { flex-basis:100%; margin:4px 0 0; font-size:11px; color:var(--muted); }
+.backup-status.warn { color:#ffd28a; }
+.backup-toggle { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:4px; }

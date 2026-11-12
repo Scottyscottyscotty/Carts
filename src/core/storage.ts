@@ -13,6 +13,20 @@ import {
 import type { ParsedLine } from "../adapters/types";
 
 const KEY = "store";
+const UNDO_KEY = "undo";
+export const UNDO_TTL_MS = 5 * 60 * 1000;
+
+export interface UndoSnapshot {
+  at: number;
+  label: string;
+  data: StoreData;
+}
+
+/** The pending undo, if it was saved less than UNDO_TTL_MS ago. */
+export async function loadUndo(kv: KV = chromeKV, now = Date.now()): Promise<UndoSnapshot | null> {
+  const s = (await kv.get(UNDO_KEY)) as UndoSnapshot | null | undefined;
+  return s && now - s.at < UNDO_TTL_MS ? s : null;
+}
 
 /** Pluggable backend so tests can run without chrome. */
 export interface KV {
@@ -42,11 +56,16 @@ export class Store {
    * Serialized read-modify-write. Skips the storage write when nothing changed, so idle syncs don't
    * trigger storage listeners. (Callers in other contexts go through the service worker; see client.ts.)
    */
-  update(fn: (d: StoreData) => void): Promise<StoreData> {
+  update(fn: (d: StoreData) => void, snapshotLabel?: (d: StoreData) => string): Promise<StoreData> {
     const run = async () => {
       const raw = await this.kv.get(KEY);
       const d = migrate(raw);
       const before = JSON.stringify(raw ?? null);
+      // Destructive operations keep the previous state so the panel can offer Undo.
+      if (snapshotLabel && (d.commanderOrder.length > 0 || Object.keys(d.items).length > 0)) {
+        const snap: UndoSnapshot = { at: Date.now(), label: snapshotLabel(d), data: structuredClone(d) };
+        await this.kv.set(UNDO_KEY, snap);
+      }
       fn(d);
       if (JSON.stringify(d) !== before) await this.kv.set(KEY, d);
       return d;
@@ -77,14 +96,27 @@ export class Store {
   }
 
   removeCommander(id: string) {
+    return this.update(
+      (d) => {
+        delete d.commanders[id];
+        d.commanderOrder = d.commanderOrder.filter((x) => x !== id);
+        if (d.activeCommanderId === id) d.activeCommanderId = d.commanderOrder[0] ?? null;
+        for (const [itemId, item] of Object.entries(d.items)) {
+          item.allocations = item.allocations.filter((a) => a.commanderId !== id);
+          if (item.allocations.length === 0) delete d.items[itemId];
+        }
+      },
+      (d) => `Deleted ${d.commanders[id]?.name ?? "a commander"}`,
+    );
+  }
+
+  /** Restore the state saved before the last delete/import, if it is still fresh. Returns the data either way. */
+  async undo() {
+    const snap = await loadUndo(this.kv);
+    if (!snap) return this.load();
+    await this.kv.set(UNDO_KEY, null);
     return this.update((d) => {
-      delete d.commanders[id];
-      d.commanderOrder = d.commanderOrder.filter((x) => x !== id);
-      if (d.activeCommanderId === id) d.activeCommanderId = d.commanderOrder[0] ?? null;
-      for (const [itemId, item] of Object.entries(d.items)) {
-        item.allocations = item.allocations.filter((a) => a.commanderId !== id);
-        if (item.allocations.length === 0) delete d.items[itemId];
-      }
+      Object.assign(d, snap.data);
     });
   }
 
@@ -154,9 +186,12 @@ export class Store {
   /** Replace everything (used by import). Validates and migrates first. */
   replaceAll(raw: unknown) {
     const next = validateImport(raw);
-    return this.update((d) => {
-      Object.assign(d, next);
-    });
+    return this.update(
+      (d) => {
+        Object.assign(d, next);
+      },
+      () => "Replaced all data with an import",
+    );
   }
 
   untag(itemId: string, commanderId: string) {
@@ -265,6 +300,7 @@ export const MUTATORS = [
   "markMissingBought",
   "syncCart",
   "replaceAll",
+  "undo",
 ] as const;
 export type Mutator = (typeof MUTATORS)[number];
 
@@ -320,11 +356,28 @@ export type Settings = {
   autoTag: boolean;
   /** On a listing page, tag to the Active commander when Add succeeds. */
   autoTagOnAdd: boolean;
+  /** Save a dated backup file to the Downloads folder after changes (about once a day). */
+  autoBackup: boolean;
 };
 
 export async function loadSettings(kv: KV = chromeKV): Promise<Settings> {
   const raw = (await kv.get(SETTINGS_KEY)) as Partial<Settings> | undefined;
-  return { autoTag: Boolean(raw?.autoTag), autoTagOnAdd: raw?.autoTagOnAdd ?? true };
+  return {
+    autoTag: Boolean(raw?.autoTag),
+    autoTagOnAdd: raw?.autoTagOnAdd ?? true,
+    autoBackup: raw?.autoBackup ?? true,
+  };
+}
+
+/** Backup bookkeeping. Each key has exactly one writer (service worker / side panel), so no races. */
+export const BACKUP_AUTO_KEY = "backupAuto"; // written by the service worker
+export const BACKUP_MANUAL_KEY = "backupManual"; // written by the side panel when you press Export
+export async function loadBackupState(kv: KV = chromeKV) {
+  const [auto, manual] = await Promise.all([kv.get(BACKUP_AUTO_KEY), kv.get(BACKUP_MANUAL_KEY)]);
+  return {
+    auto: auto as import("./backup").AutoBackupState | undefined,
+    manualAt: (manual as { at?: number } | undefined)?.at,
+  };
 }
 
 export async function saveSettings(s: Partial<Settings>, kv: KV = chromeKV): Promise<Settings> {

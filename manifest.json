@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "sidePanel",
-    "clipboardWrite"
+    "clipboardWrite",
+    "downloads"
   ],
   "host_permissions": [
     "https://api.scryfall.com/*",
