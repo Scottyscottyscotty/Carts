@@ -1,6 +1,5 @@
 .cct-root {
-  grid-column: 1 / -1; /* span the whole row when the host row is a CSS grid */
-  width: 100%;
+  box-sizing: border-box;
   text-align: left;
   font: 12px/1.35 system-ui, sans-serif;
   color: #1a1a24;
@@ -69,3 +68,5 @@
 }
 .cct-muted { color: #6b6b80; }
 .cct-err { color: #b42318; }
+
+.cct-listing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; padding: 6px 8px; border-top: 0; background: #f6f3ff; border-radius: 6px; list-style: none; }

@@ -86,10 +86,12 @@ function injectCartLine(h: CartLineHandle, data: StoreData) {
 }
 
 function injectListingLine(h: ListingLineHandle, data: StoreData) {
-  let root = h.element.querySelector<HTMLElement>(":scope > .cct-root");
+  // Place the controls as a sibling right after the row so we never reshape the site's own row layout.
+  const next = h.element.nextElementSibling;
+  let root = next instanceof HTMLElement && next.classList.contains("cct-root") ? next : null;
   if (!root) {
-    root = el("div", { class: "cct-root" });
-    h.element.append(root);
+    root = el("div", { class: "cct-root cct-listing" });
+    h.element.insertAdjacentElement("afterend", root);
   }
   root.replaceChildren();
   const chips = el("div", { class: "cct-row" });
