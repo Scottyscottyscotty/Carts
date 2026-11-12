@@ -4,9 +4,17 @@
   "version": "0.1.0",
   "description": "Tag your TCG cart items to the Commander deck they are for.",
   "permissions": ["storage", "sidePanel", "clipboardWrite"],
-  "host_permissions": ["https://api.scryfall.com/*"],
+  "host_permissions": ["https://api.scryfall.com/*", "https://manapool.com/*"],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": { "default_title": "Commander Cart Tagger" },
   "side_panel": { "default_path": "sidepanel.html" },
+  "content_scripts": [
+    {
+      "matches": ["https://manapool.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
   "icons": { "128": "icons/icon128.png" }
 }

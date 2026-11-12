@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { Store, type KV } from "../../src/core/storage";
 import { migrate } from "../../src/core/migrations";
-import { SCHEMA_VERSION } from "../../src/core/model";
+import { identityKey, SCHEMA_VERSION } from "../../src/core/model";
+import type { ItemDraft } from "../../src/core/model";
 
 function memKV(): KV {
   const m = new Map<string, unknown>();
@@ -37,6 +38,57 @@ describe("Store", () => {
     expect(d.commanderOrder).toHaveLength(1);
     expect(d.activeCommanderId).toBe(d.commanderOrder[0]);
   });
+  it("tags remaining qty to a commander and can untag", async () => {
+    const s = new Store(memKV());
+    const d0 = await s.addCommander({ ...atraxa, colorIdentity: [] });
+    const id = d0.commanderOrder[0]!;
+    const draft: ItemDraft = {
+      site: "manapool",
+      name: "Sol Ring",
+      set: "C21",
+      collectorNumber: "1",
+      finish: "nonfoil",
+      condition: "NM",
+      language: "EN",
+      seller: "Shop",
+      unitPrice: 1.5,
+      currency: "USD",
+      listingUrl: "https://manapool.com/cart",
+      quantity: 2,
+    };
+    let d = await s.tagToCommander(draft, id);
+    const item = Object.values(d.items)[0]!;
+    expect(item.allocations[0]).toMatchObject({ commanderId: id, qty: 2, status: "in_cart" });
+    d = await s.setAllocationStatus(item.id, id, "bought");
+    expect(d.items[item.id]?.allocations[0]?.status).toBe("bought");
+    d = await s.untag(item.id, id);
+    expect(Object.keys(d.items)).toHaveLength(0);
+  });
+
+  it("auto-tags leftover cart qty to the active commander", async () => {
+    const s = new Store(memKV());
+    const d0 = await s.addCommander({ ...atraxa, colorIdentity: [] });
+    const line = {
+      site: "manapool",
+      name: "Forest",
+      set: "DMR",
+      collectorNumber: "",
+      finish: "nonfoil" as const,
+      condition: "NM",
+      language: "EN",
+      seller: "Shop",
+      unitPrice: 0.1,
+      currency: "USD",
+      listingUrl: "https://manapool.com/cart",
+      quantity: 3,
+    };
+    const d = await s.syncCart([line], true);
+    const item = Object.values(d.items)[0]!;
+    expect(identityKey(item)).toBe(identityKey(line));
+    expect(item.allocations[0]?.commanderId).toBe(d0.activeCommanderId);
+    expect(item.allocations[0]?.qty).toBe(3);
+  });
+
   it("serializes concurrent updates", async () => {
     const s = new Store(memKV());
     await Promise.all([

@@ -1,6 +1,12 @@
 import { store } from "../core/storage";
 import { searchCommanders, type CommanderResult } from "../core/scryfall";
-import { commanderTotals, type Color, type StoreData } from "../core/model";
+import {
+  commanderTotals,
+  formatCommanderList,
+  type Color,
+  type ItemStatus,
+  type StoreData,
+} from "../core/model";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const searchEl = $<HTMLInputElement>("search");
@@ -75,14 +81,68 @@ function render(data: StoreData) {
     const section = el("section", { class: "cmd" + (isActive ? " active" : "") }, head);
 
     if (!c.collapsed) {
+      const tools = el("div", { class: "cmd-tools" });
+      const copy = el("button", {}, "Copy list");
+      copy.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(formatCommanderList(data, id));
+          copy.textContent = "Copied";
+          setTimeout(() => (copy.textContent = "Copy list"), 1200);
+        } catch (e) {
+          showError(e);
+        }
+      };
+      const bought = el("button", {}, "Mark all bought");
+      bought.onclick = () => store.markCommanderBought(id).then(render).catch(showError);
+      tools.append(copy, bought);
+
       const ul = el("ul", { class: "items" });
       for (const item of Object.values(data.items)) {
         const a = item.allocations.find((x) => x.commanderId === id);
         if (!a) continue;
-        ul.append(el("li", {}, `${a.qty} ${item.name}`, `$${(a.qty * item.unitPrice).toFixed(2)}`));
+        const status = el("select", {}) as HTMLSelectElement;
+        for (const s of ["in_cart", "waiting_on_price", "bought"] as ItemStatus[]) {
+          status.append(new Option(s.replaceAll("_", " "), s, false, a.status === s));
+        }
+        status.onchange = () =>
+          store.setAllocationStatus(item.id, id, status.value as ItemStatus).then(render).catch(showError);
+
+        const note = el("input", {
+          type: "text",
+          placeholder: "Note",
+          value: a.note,
+        }) as HTMLInputElement;
+        note.onchange = () => store.setAllocationNote(item.id, id, note.value).catch(showError);
+
+        const untag = el("button", { class: "del" }, "Untag");
+        untag.onclick = () => store.untag(item.id, id).then(render).catch(showError);
+
+        const finish = item.finish === "nonfoil" || item.finish === "unknown" ? "" : ` · ${item.finish}`;
+        const li = el(
+          "li",
+          { class: a.status === "bought" ? "bought" : "" },
+          el(
+            "div",
+            { class: "item-top" },
+            el("span", {}, `${a.qty}× ${item.name}`),
+            el("span", {}, `$${(a.qty * item.unitPrice).toFixed(2)}`),
+          ),
+          el(
+            "div",
+            { class: "item-meta" },
+            `${item.set || "unknown set"} · ${item.seller || "unknown seller"} · ${item.condition || "?"}${finish}`,
+          ),
+          el("div", { class: "item-actions" }, status, note, untag),
+        );
+        ul.append(li);
       }
       section.append(
-        el("div", { class: "cmd-body" }, ul.children.length ? ul : el("p", { class: "muted" }, "No items tagged yet.")),
+        el(
+          "div",
+          { class: "cmd-body" },
+          tools,
+          ul.children.length ? ul : el("p", { class: "muted" }, "No items tagged yet. Tag them on Manapool."),
+        ),
       );
     }
     listEl.append(section);

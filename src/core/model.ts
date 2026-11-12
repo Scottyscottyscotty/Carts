@@ -70,6 +70,30 @@ export function emptyStore(): StoreData {
   };
 }
 
+/** Identity used to match a live cart/listing row to a stored item. Price is not part of it. */
+export function identityKey(p: {
+  site: string;
+  name: string;
+  set: string;
+  seller: string;
+  condition: string;
+  finish: Finish;
+}): string {
+  return [p.site, p.name, p.set, p.seller, p.condition, p.finish]
+    .map((s) => s.trim().toLowerCase())
+    .join("|");
+}
+
+export type ItemDraft = Omit<CartItem, "id" | "allocations" | "addedAt">;
+
+export function allocatedQty(item: CartItem): number {
+  return item.allocations.reduce((n, a) => n + a.qty, 0);
+}
+
+export function remainingQty(item: CartItem): number {
+  return Math.max(0, item.quantity - allocatedQty(item));
+}
+
 /** Subtotal and count for one commander across all item allocations. */
 export function commanderTotals(data: StoreData, commanderId: string) {
   let count = 0;
@@ -82,4 +106,20 @@ export function commanderTotals(data: StoreData, commanderId: string) {
     }
   }
   return { count, subtotal };
+}
+
+export function formatCommanderList(data: StoreData, commanderId: string): string {
+  const cmd = data.commanders[commanderId];
+  const lines: string[] = cmd ? [`# ${cmd.name}`, ""] : [];
+  for (const item of Object.values(data.items)) {
+    const a = item.allocations.find((x) => x.commanderId === commanderId);
+    if (!a) continue;
+    const foil = item.finish === "nonfoil" || item.finish === "unknown" ? "" : ` ${item.finish}`;
+    lines.push(
+      `${a.qty}x ${item.name} (${item.set}) ${item.condition}${foil} — $${(a.qty * item.unitPrice).toFixed(2)} [${a.status.replaceAll("_", " ")}]`,
+    );
+  }
+  const { count, subtotal } = commanderTotals(data, commanderId);
+  lines.push("", `${count} items · $${subtotal.toFixed(2)}`);
+  return lines.join("\n");
 }

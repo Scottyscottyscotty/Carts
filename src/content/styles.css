@@ -1,0 +1,68 @@
+.cct-root {
+  font: 12px/1.35 system-ui, sans-serif;
+  color: #1a1a24;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #d4d4de;
+}
+.cct-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cct-root button,
+.cct-root select {
+  font: inherit;
+  border: 1px solid #8b6cf0;
+  background: #f6f3ff;
+  color: #3b2a7a;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.cct-root button:hover { background: #8b6cf0; color: #fff; }
+.cct-root button:disabled { opacity: 0.55; cursor: default; }
+.cct-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #8b6cf0;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.cct-chip button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0 2px;
+  font-size: 13px;
+}
+.cct-banner {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #1e1e28;
+  color: #e8e8ee;
+  font: 13px/1.4 system-ui, sans-serif;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 2px solid #8b6cf0;
+}
+.cct-banner strong { color: #cbb9ff; }
+.cct-banner label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.cct-banner button {
+  font: inherit;
+  background: #8b6cf0;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.cct-muted { color: #6b6b80; }
+.cct-err { color: #b42318; }
