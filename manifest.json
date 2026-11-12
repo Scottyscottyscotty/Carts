@@ -1,20 +1,53 @@
 {
   "manifest_version": 3,
   "name": "Commander Cart Tagger",
-  "version": "0.1.0",
-  "description": "Tag your TCG cart items to the Commander deck they are for.",
-  "permissions": ["storage", "sidePanel", "clipboardWrite"],
-  "host_permissions": ["https://api.scryfall.com/*", "https://manapool.com/*"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "action": { "default_title": "Commander Cart Tagger" },
-  "side_panel": { "default_path": "sidepanel.html" },
+  "version": "0.2.0",
+  "description": "Tag your TCG cart items to the Commander deck they are for. Local-only; never checks out for you.",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.scryfall.com/*",
+    "https://manapool.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Commander Cart Tagger"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "content_scripts": [
     {
-      "matches": ["https://manapool.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://manapool.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://manapool.com/*"
+      ],
+      "js": [
+        "page-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
-  "icons": { "128": "icons/icon128.png" }
+  "icons": {
+    "128": "icons/icon128.png"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt2KSCoax5/pt5lmPMrXIvbuPDhr7rXJT2M1MtIdmmVw7ZT199LooD2p/2zOC60tzlg4OjRN+h4dN9j/e0oJplvRijVuoh3f3/FGR1rKIDRBTRUSEWYwj0pG5p5s8+k9vhtZT9ZLg1Pa6faPTmFNIyYXt9IAvKOCfNwITdvTHtWc3JqT/sHgOaZ0KS2fGfRhl90IlsKPKMGXAvlj7LiGJU5tMHZa5ULGXTEG1a99HRtBVKGD5bMZjnGy0MANIMV5wQlBy3XuanpxFMfCvaCUSaraeiOytK26sbwlznHGNTslCs4t+JXNeMrUGfrhHd6iliGMFQISC8EfmZ0KxL809nQIDAQAB"
 }

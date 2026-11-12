@@ -1,4 +1,4 @@
-import type { ParsedLine, SiteAdapter, CartLineHandle, ListingLineHandle } from "./types";
+import type { ParsedLine, SiteAdapter, CartLineHandle, ListingLineHandle, CartChange } from "./types";
 import { badges, classifyFinish, parseMoney, parseQty, pickCondition, pickLanguage, text } from "./parse";
 
 const SITE = "manapool";
@@ -143,8 +143,22 @@ function listingRow(addBtn: HTMLElement, page: string, name: string, set: string
   };
 }
 
+/** Body of Manapool's add-to-cart call: {"changes":[{"inventory_id":"…","delta_quantity":1,…}]}. */
+export function parseSyncChanges(body: string): CartChange[] {
+  try {
+    const j = JSON.parse(body);
+    if (!j || !Array.isArray(j.changes)) return [];
+    return j.changes
+      .filter((c: any) => c && typeof c.inventory_id === "string" && Number.isFinite(c.delta_quantity))
+      .map((c: any) => ({ listingId: c.inventory_id as string, delta: Number(c.delta_quantity) }));
+  } catch {
+    return [];
+  }
+}
+
 export const manapool: SiteAdapter = {
   id: SITE,
+  addRequest: { urlIncludes: "/rpc/synchronize_cart_items", parseBody: parseSyncChanges },
   match(url) {
     try {
       const h = new URL(url).hostname;

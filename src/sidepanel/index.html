@@ -18,6 +18,14 @@
   <p class="hint">On Manapool, open your cart (or a listing) and tag lines to the Active commander. Checkout is never automated.</p>
   <main id="commanders"></main>
   <p id="error" class="error" hidden></p>
+  <footer id="footer-tools">
+    <button id="copy-all" title="All commanders combined, one line per card">Copy all lists</button>
+    <button id="export-data" title="Save a backup file">Export data</button>
+    <button id="import-data" title="Restore from a backup file">Import data</button>
+    <button id="debug-info" title="Copies version and page-read info (no card or personal data) to send with a bug report">Copy debug info</button>
+    <input id="import-file" type="file" accept="application/json,.json" hidden />
+    <span id="version" class="muted"></span>
+  </footer>
   <script type="module" src="sidepanel.js"></script>
 </body>
 </html>

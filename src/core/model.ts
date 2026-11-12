@@ -1,5 +1,5 @@
 /** Single versioned data model. Bump SCHEMA_VERSION and add a migration in migrations.ts when it changes. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export type Color = "W" | "U" | "B" | "R" | "G";
 
@@ -50,6 +50,10 @@ export interface CartItem {
   quantity: number;
   allocations: Allocation[];
   addedAt: number;
+  /** True once this line has been seen on the site's cart page. */
+  seenInCart: boolean;
+  /** True when it was seen in the cart before but is no longer there (bought elsewhere, removed, checked out). */
+  missingFromCart: boolean;
 }
 
 export interface StoreData {
@@ -70,7 +74,9 @@ export function emptyStore(): StoreData {
   };
 }
 
-/** Identity used to match a live cart/listing row to a stored item. Price is not part of it. */
+const norm = (s: string) => s.trim().toLowerCase();
+
+/** Coarse identity of a line. Price and quantity are not part of it. */
 export function identityKey(p: {
   site: string;
   name: string;
@@ -78,13 +84,33 @@ export function identityKey(p: {
   seller: string;
   condition: string;
   finish: Finish;
+  language?: string;
 }): string {
-  return [p.site, p.name, p.set, p.seller, p.condition, p.finish]
-    .map((s) => s.trim().toLowerCase())
-    .join("|");
+  return [p.site, p.name, p.set, p.seller, p.condition, p.finish, p.language ?? ""].map(norm).join("|");
 }
 
-export type ItemDraft = Omit<CartItem, "id" | "allocations" | "addedAt">;
+type Identity = Parameters<typeof identityKey>[0] & { collectorNumber?: string };
+
+/**
+ * Whether two lines are the same listing. Unknown (empty) fields match anything, because listing
+ * pages know the collector number and cart pages don't, while two *known and different* collector
+ * numbers (e.g. two printings in one set) are different cards.
+ */
+export function sameItem(a: Identity, b: Identity): boolean {
+  if (a.site !== b.site) return false;
+  const loose = (x: string | undefined, y: string | undefined) => !norm(x ?? "") || !norm(y ?? "") || norm(x!) === norm(y!);
+  return (
+    norm(a.name) === norm(b.name) &&
+    loose(a.set, b.set) &&
+    loose(a.seller, b.seller) &&
+    loose(a.condition, b.condition) &&
+    a.finish === b.finish &&
+    loose(a.language, b.language) &&
+    loose(a.collectorNumber, b.collectorNumber)
+  );
+}
+
+export type ItemDraft = Omit<CartItem, "id" | "allocations" | "addedAt" | "seenInCart" | "missingFromCart">;
 
 export function allocatedQty(item: CartItem): number {
   return item.allocations.reduce((n, a) => n + a.qty, 0);
@@ -119,24 +145,29 @@ export interface ExportOptions {
   includeSet?: boolean;
 }
 
-/**
- * Plain decklist lines for one commander: `<qty> <Card Name>`, one per line.
- * Lines for the same card (e.g. from different sellers) are merged.
- */
-export function formatCommanderList(data: StoreData, commanderId: string, opts: ExportOptions = {}): string {
-  const merged = new Map<string, { qty: number; label: string }>();
+function exportLines(data: StoreData, commanderIds: string[] | null, opts: ExportOptions): string {
+  const merged = new Map<string, number>();
   for (const item of Object.values(data.items)) {
-    const a = item.allocations.find((x) => x.commanderId === commanderId);
-    if (!a) continue;
+    let qty = 0;
+    for (const a of item.allocations) if (!commanderIds || commanderIds.includes(a.commanderId)) qty += a.qty;
+    if (qty <= 0) continue;
     let label = item.name;
     if (opts.includeSet) {
       const set = setCodeFromUrl(item.listingUrl) || item.set;
       if (set) label += ` (${set})`;
       if (item.collectorNumber) label += ` ${item.collectorNumber}`;
     }
-    const cur = merged.get(label);
-    if (cur) cur.qty += a.qty;
-    else merged.set(label, { qty: a.qty, label });
+    merged.set(label, (merged.get(label) ?? 0) + qty);
   }
-  return [...merged.values()].map((m) => `${m.qty} ${m.label}`).join("\n");
+  return [...merged].map(([label, qty]) => `${qty} ${label}`).join("\n");
+}
+
+/** Plain lines for one commander: `<qty> <Card Name>`, one per line; same card from several sellers is merged. */
+export function formatCommanderList(data: StoreData, commanderId: string, opts: ExportOptions = {}): string {
+  return exportLines(data, [commanderId], opts);
+}
+
+/** Same format for every commander combined. */
+export function formatAllList(data: StoreData, opts: ExportOptions = {}): string {
+  return exportLines(data, null, opts);
 }

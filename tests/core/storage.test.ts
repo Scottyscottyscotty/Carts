@@ -115,7 +115,7 @@ describe("formatCommanderList", () => {
   const item = (over: Partial<CartItem>): CartItem => ({
     id: "i", site: "manapool", name: "Exploration", set: "Dominaria Remastered", collectorNumber: "159",
     finish: "nonfoil", condition: "NM", language: "EN", seller: "x", unitPrice: 27.55, currency: "USD",
-    listingUrl: "https://manapool.com/card/dmr/159/exploration", quantity: 1, addedAt: 0,
+    listingUrl: "https://manapool.com/card/dmr/159/exploration", quantity: 1, addedAt: 0, seenInCart: false, missingFromCart: false,
     allocations: [{ commanderId: "c", qty: 1, status: "in_cart", note: "" }], ...over,
   });
   const data = () => {

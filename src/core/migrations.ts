@@ -2,8 +2,25 @@ import { SCHEMA_VERSION, emptyStore, type StoreData } from "./model";
 
 /** migrations[n] upgrades data from version n to n+1. */
 const migrations: Record<number, (d: any) => any> = {
-  // 1: (d) => ({ ...d, schemaVersion: 2, ...newFields }),
+  // v1 -> v2: track whether items have been seen in the site cart.
+  1: (d) => {
+    const items: Record<string, any> = {};
+    for (const [id, it] of Object.entries<any>(d.items ?? {})) {
+      items[id] = { seenInCart: false, missingFromCart: false, language: "EN", ...it };
+    }
+    return { ...d, items, schemaVersion: 2 };
+  },
 };
+
+/** Throws unless `raw` looks like store data from this or an older version. Used for imports. */
+export function validateImport(raw: unknown): StoreData {
+  const d = migrate(raw);
+  const r = raw as any;
+  if (!r || typeof r !== "object" || typeof r.commanders !== "object" || typeof r.items !== "object" || !Array.isArray(r.commanderOrder)) {
+    throw new Error("That file doesn't look like Commander Cart Tagger data.");
+  }
+  return d;
+}
 
 export function migrate(raw: unknown): StoreData {
   if (!raw || typeof raw !== "object") return emptyStore();

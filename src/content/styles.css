@@ -70,3 +70,14 @@
 .cct-err { color: #b42318; }
 
 .cct-listing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; padding: 6px 8px; border-top: 0; background: #f6f3ff; border-radius: 6px; list-style: none; }
+
+.cct-qty { width: 3.2em; padding: 3px 4px; border: 1px solid #8b6cf0; border-radius: 6px; background: #fff; color: #3b2a7a; font: inherit; }
+.cct-warn { flex-basis: 100%; background: #fff4e5; color: #7a4100; border-radius: 6px; padding: 6px 10px; }
+.cct-warn button { margin-left: 8px; background: #7a4100; }
+.cct-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 2147483000; max-width: 360px;
+  background: #1e1e28; color: #fff; border-left: 4px solid #8b6cf0; border-radius: 8px;
+  padding: 10px 14px; font: 13px/1.4 system-ui, sans-serif; box-shadow: 0 6px 24px rgba(0,0,0,.35);
+}
+.cct-toast-err { border-left-color: #ff6b6b; }
+.cct-toast button { margin-left: 8px; font: inherit; background: #8b6cf0; color: #fff; border: 0; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
