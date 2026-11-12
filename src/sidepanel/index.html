@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Commander Cart Tagger</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Commander Cart Tagger</h1>
+    <div class="search">
+      <input id="search" type="search" placeholder="Add commander… (search Scryfall)" autocomplete="off" />
+      <ul id="results" hidden></ul>
+      <p id="search-msg" class="muted" hidden></p>
+    </div>
+  </header>
+  <main id="commanders"></main>
+  <p id="error" class="error" hidden></p>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

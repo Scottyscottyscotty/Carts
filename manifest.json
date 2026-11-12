@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Commander Cart Tagger",
+  "version": "0.1.0",
+  "description": "Tag your TCG cart items to the Commander deck they are for.",
+  "permissions": ["storage", "sidePanel", "clipboardWrite"],
+  "host_permissions": ["https://api.scryfall.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Commander Cart Tagger" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "icons": { "128": "icons/icon128.png" }
+}
