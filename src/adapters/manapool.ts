@@ -22,15 +22,36 @@ function listingMeta(url: string): { setCode: string; collectorNumber: string } 
   return { setCode: "", collectorNumber: "" };
 }
 
+const SHOP_HREF = /\/shop\/[^/?#]+\/?$/;
+
+/** Distinct seller shop links under `root` (a seller can be linked several times). */
+function shopLinks(root: Element): Map<string, Element[]> {
+  const byHref = new Map<string, Element[]>();
+  for (const a of root.querySelectorAll('a[href*="/shop/"]')) {
+    const href = (a.getAttribute("href") ?? "").split(/[?#]/)[0] ?? "";
+    if (!SHOP_HREF.test(href)) continue;
+    byHref.set(href, [...(byHref.get(href) ?? []), a]);
+  }
+  return byHref;
+}
+
+/** Seller display name = first anchor for the shop that has visible text (some are image-only). */
+function sellerName(anchors: Element[]): string {
+  for (const a of anchors) {
+    const t = text(a);
+    if (t && t.toLowerCase() !== "verified seller") return t;
+  }
+  return "";
+}
+
+/** Walk up from `el` to the nearest ancestor that contains exactly one distinct seller. */
 function sellerNear(el: Element): string {
   let n: Element | null = el.parentElement;
   let found = "";
   while (n) {
-    const shops = [...n.querySelectorAll('h3 a[href*="/shop/"], a[href*="/shop/"]')].filter((a) =>
-      /\/shop\/[^/]+\/?$/.test(a.getAttribute("href") ?? ""),
-    );
-    if (shops.length === 1) found = text(shops[0]);
-    if (shops.length > 1) break;
+    const shops = shopLinks(n);
+    if (shops.size === 1) found = sellerName([...shops.values()][0]!);
+    if (shops.size > 1) break;
     n = n.parentElement;
   }
   return found;
@@ -92,8 +113,7 @@ function listingRow(addBtn: HTMLElement, page: string, name: string, set: string
     n = n.parentElement;
   }
   if (!row) return null;
-  const shop = row.querySelector('a[href*="/shop/"]');
-  const seller = text(shop);
+  const seller = sellerName([...shopLinks(row).values()][0] ?? []);
   const b = badges(row);
   let unitPrice = 0;
   let currency = "USD";
@@ -150,8 +170,8 @@ export const manapool: SiteAdapter = {
   scanCart(doc, pageUrlStr) {
     const out: CartLineHandle[] = [];
     for (const btn of doc.querySelectorAll<HTMLElement>('button[aria-label="Update Quantity"]')) {
-      const li = btn.closest("li");
-      if (!(li instanceof HTMLElement)) continue;
+      const li = btn.closest<HTMLElement>("li");
+      if (!li) continue;
       const line = lineFromCartLi(li, pageUrlStr);
       if (!line) continue;
       out.push({ element: li, line });
@@ -167,7 +187,7 @@ export const manapool: SiteAdapter = {
       if (!/\+\s*Add/i.test(text(btn))) continue;
       const line = listingRow(btn, pageUrlStr, name, set, collectorNumber);
       if (!line || !line.seller) continue;
-      out.push({ element: btn.parentElement instanceof HTMLElement ? btn.parentElement : btn, addButton: btn, line });
+      out.push({ element: btn.parentElement ?? btn, addButton: btn, line });
     }
     return out;
   },
