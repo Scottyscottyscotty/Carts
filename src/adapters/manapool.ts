@@ -187,7 +187,7 @@ export const manapool: SiteAdapter = {
       if (!/\+\s*Add/i.test(text(btn))) continue;
       const line = listingRow(btn, pageUrlStr, name, set, collectorNumber);
       if (!line || !line.seller) continue;
-      out.push({ element: btn.parentElement ?? btn, addButton: btn, line });
+      out.push({ element: btn.closest<HTMLElement>("li") ?? btn.parentElement ?? btn, addButton: btn, line });
     }
     return out;
   },

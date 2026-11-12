@@ -1,4 +1,7 @@
 .cct-root {
+  grid-column: 1 / -1; /* span the whole row when the host row is a CSS grid */
+  width: 100%;
+  text-align: left;
   font: 12px/1.35 system-ui, sans-serif;
   color: #1a1a24;
   margin-top: 6px;
