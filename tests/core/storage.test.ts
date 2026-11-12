@@ -108,3 +108,27 @@ describe("migrate", () => {
     expect(() => migrate({ schemaVersion: 999 })).toThrow();
   });
 });
+
+import { formatCommanderList, emptyStore, type CartItem } from "../../src/core/model";
+
+describe("formatCommanderList", () => {
+  const item = (over: Partial<CartItem>): CartItem => ({
+    id: "i", site: "manapool", name: "Exploration", set: "Dominaria Remastered", collectorNumber: "159",
+    finish: "nonfoil", condition: "NM", language: "EN", seller: "x", unitPrice: 27.55, currency: "USD",
+    listingUrl: "https://manapool.com/card/dmr/159/exploration", quantity: 1, addedAt: 0,
+    allocations: [{ commanderId: "c", qty: 1, status: "in_cart", note: "" }], ...over,
+  });
+  const data = () => {
+    const d = emptyStore();
+    d.items.a = item({ id: "a" });
+    d.items.b = item({ id: "b", seller: "y", allocations: [{ commanderId: "c", qty: 2, status: "bought", note: "" }] });
+    d.items.o = item({ id: "o", name: "Sol Ring", allocations: [{ commanderId: "other", qty: 1, status: "in_cart", note: "" }] });
+    return d;
+  };
+  it("is `qty name` only, merging duplicate cards and ignoring other commanders", () => {
+    expect(formatCommanderList(data(), "c")).toBe("3 Exploration");
+  });
+  it("can include set code and number", () => {
+    expect(formatCommanderList(data(), "c", { includeSet: true })).toBe("3 Exploration (DMR) 159");
+  });
+});

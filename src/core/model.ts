@@ -108,18 +108,35 @@ export function commanderTotals(data: StoreData, commanderId: string) {
   return { count, subtotal };
 }
 
-export function formatCommanderList(data: StoreData, commanderId: string): string {
-  const cmd = data.commanders[commanderId];
-  const lines: string[] = cmd ? [`# ${cmd.name}`, ""] : [];
+/** Set code from a Manapool-style listing URL (/card/<set>/<number>/...), if present. */
+function setCodeFromUrl(url: string): string {
+  const m = url.match(/\/card\/([^/]+)\/[^/]+/);
+  return m?.[1]?.toUpperCase() ?? "";
+}
+
+export interface ExportOptions {
+  /** Append the set and collector number, e.g. `1 Exploration (DMR) 159`. Default: names only. */
+  includeSet?: boolean;
+}
+
+/**
+ * Plain decklist lines for one commander: `<qty> <Card Name>`, one per line.
+ * Lines for the same card (e.g. from different sellers) are merged.
+ */
+export function formatCommanderList(data: StoreData, commanderId: string, opts: ExportOptions = {}): string {
+  const merged = new Map<string, { qty: number; label: string }>();
   for (const item of Object.values(data.items)) {
     const a = item.allocations.find((x) => x.commanderId === commanderId);
     if (!a) continue;
-    const foil = item.finish === "nonfoil" || item.finish === "unknown" ? "" : ` ${item.finish}`;
-    lines.push(
-      `${a.qty}x ${item.name} (${item.set}) ${item.condition}${foil} — $${(a.qty * item.unitPrice).toFixed(2)} [${a.status.replaceAll("_", " ")}]`,
-    );
+    let label = item.name;
+    if (opts.includeSet) {
+      const set = setCodeFromUrl(item.listingUrl) || item.set;
+      if (set) label += ` (${set})`;
+      if (item.collectorNumber) label += ` ${item.collectorNumber}`;
+    }
+    const cur = merged.get(label);
+    if (cur) cur.qty += a.qty;
+    else merged.set(label, { qty: a.qty, label });
   }
-  const { count, subtotal } = commanderTotals(data, commanderId);
-  lines.push("", `${count} items · $${subtotal.toFixed(2)}`);
-  return lines.join("\n");
+  return [...merged.values()].map((m) => `${m.qty} ${m.label}`).join("\n");
 }

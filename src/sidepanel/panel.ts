@@ -82,19 +82,24 @@ function render(data: StoreData) {
 
     if (!c.collapsed) {
       const tools = el("div", { class: "cmd-tools" });
-      const copy = el("button", {}, "Copy list");
-      copy.onclick = async () => {
-        try {
-          await navigator.clipboard.writeText(formatCommanderList(data, id));
-          copy.textContent = "Copied";
-          setTimeout(() => (copy.textContent = "Copy list"), 1200);
-        } catch (e) {
-          showError(e);
-        }
+      const makeCopy = (label: string, opts: { includeSet?: boolean }) => {
+        const btn = el("button", {}, label);
+        btn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(formatCommanderList(data, id, opts));
+            btn.textContent = "Copied";
+            setTimeout(() => (btn.textContent = label), 1200);
+          } catch (e) {
+            showError(e);
+          }
+        };
+        return btn;
       };
+      const copy = makeCopy("Copy list", {});
+      const copySets = makeCopy("Copy with sets", { includeSet: true });
       const bought = el("button", {}, "Mark all bought");
       bought.onclick = () => store.markCommanderBought(id).then(render).catch(showError);
-      tools.append(copy, bought);
+      tools.append(copy, copySets, bought);
 
       const ul = el("ul", { class: "items" });
       for (const item of Object.values(data.items)) {
