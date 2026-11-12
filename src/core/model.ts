@@ -115,7 +115,7 @@ function setCodeFromUrl(url: string): string {
 }
 
 export interface ExportOptions {
-  /** Append the set and collector number, e.g. `1 Exploration (DMR) 159`. Default: names only. */
+  /** Append the set and collector number, e.g. `1 Exploration (DMR) 159`. Off = names only. */
   includeSet?: boolean;
 }
 

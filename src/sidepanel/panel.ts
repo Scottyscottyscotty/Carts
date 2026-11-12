@@ -95,11 +95,11 @@ function render(data: StoreData) {
         };
         return btn;
       };
-      const copy = makeCopy("Copy list", {});
-      const copySets = makeCopy("Copy with sets", { includeSet: true });
+      const copy = makeCopy("Copy list", { includeSet: true });
+      const copyNames = makeCopy("Copy names only", {});
       const bought = el("button", {}, "Mark all bought");
       bought.onclick = () => store.markCommanderBought(id).then(render).catch(showError);
-      tools.append(copy, copySets, bought);
+      tools.append(copy, copyNames, bought);
 
       const ul = el("ul", { class: "items" });
       for (const item of Object.values(data.items)) {
